@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { tempMovieData, tempWatchedData } from "./data";
 import Navbar from "./components/Navbar";
 import MainContent from "./components/MainContent";
 import NumResults from "./components/NumResults";
@@ -11,37 +10,42 @@ import WatchedSummary from "./components/WatchedSummary";
 import WatchedMoviesList from "./components/WatchedMoviesList";
 import Loader from "./components/Loader";
 import ErrorMessage from "./components/ErrorMessage";
+import MovieDetails from "./components/MovieDetails";
 const API_KEY = import.meta.env.VITE_OMDB_API_KEY;
 
 export default function App() {
    const [movies, setMovies] = useState([]);
    const [watched, setWatched] = useState([]);
+   const [selectedId, setSelectedId] = useState(null);
    const [isLoading, setIsLoading] = useState(false);
    const [error, setError] = useState("");
    const [query, setQuery] = useState("");
 
-   const tempQuery = "ashdsjh";
 
-   useEffect(() => {
+   useEffect(function () {
+      const controller = new AbortController();
       const fetchMovies = async (key) => {
          try {
             setError("");
             setIsLoading(true);
             const res = await fetch(
                `https://www.omdbapi.com/?apikey=${key}&s=${query}`
-            );
+               , { signal: controller.signal });
             if (!res.ok) {
                throw new Error("Something went wrong with fetching movies");
             }
             const data = await res.json();
-            console.log(data);
+
             if (data.Response === "False") {
                throw new Error("Movie Not Found!");
             }
             setMovies(data.Search);
+            setError("")
          } catch (error) {
-            setError(error.message);
-            console.error("error while fetching data", error);
+            if (error.name !== "AbortError") {
+               setError(error.message);
+               console.log("error while fetching data", error);
+            }
          } finally {
             setIsLoading(false);
          }
@@ -51,9 +55,30 @@ export default function App() {
          setError("");
          return;
       }
-
+      handleCloseMovie();
       fetchMovies(API_KEY);
+
+
+      return function () {
+         controller.abort();
+      }
    }, [query]);
+
+   function handleSelectMovie(id) {
+      setSelectedId(selectedId === id ? null : id);
+   }
+
+   function handleCloseMovie() {
+      setSelectedId(null);
+   }
+
+   function handleAddWatched(movie) {
+      setWatched((watched) => [...watched, movie]);
+   }
+
+   function handleDeleteWatched(id) {
+      setWatched(watched => watched.filter(movie => movie.imdbID !== id));
+   }
 
    return (
       <>
@@ -70,11 +95,23 @@ export default function App() {
             <Box>
                {isLoading && !error && <Loader />}
                {error && <ErrorMessage message={error} />}
-               {!error && !isLoading && <MoviesList movies={movies} />}
+               {!error && !isLoading && <MoviesList movies={movies} onSelectMovie={handleSelectMovie} />}
             </Box>
             <Box>
-               <WatchedSummary watched={watched} />
-               <WatchedMoviesList watched={watched} />
+               {selectedId ? (
+                  <MovieDetails
+                     selectedId={selectedId}
+                     onCloseMovie={handleCloseMovie}
+                     onAddWatched={handleAddWatched}
+                     watched={watched}
+                  />
+               ) : (
+                  <>
+                     <WatchedSummary watched={watched} />
+                     <WatchedMoviesList watched={watched} onDeleteWatched={handleDeleteWatched} />
+                  </>
+               )
+               }
             </Box>
          </MainContent>
       </>
