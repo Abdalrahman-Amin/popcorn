@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import StarRating from "./StarRating";
 import Loader from "./Loader";
+import { useKey } from "../hooks/useKey";
 const API_KEY = import.meta.env.VITE_OMDB_API_KEY;
 
 
@@ -58,18 +59,7 @@ function MovieDetails({ selectedId, onCloseMovie, onAddWatched, watched }) {
 
     }
 
-    useEffect(function () {
-        function callback(e) {
-            if (e.key === "Escape") {
-                onCloseMovie();
-                console.log("CLOSING")
-            }
-        }
-        document.addEventListener('keydown', callback);
-        return function () {
-            document.removeEventListener('keydown', callback);
-        }
-    }, [onCloseMovie])
+    useKey("Escape", onCloseMovie);
 
     useEffect(
         function () {
@@ -100,16 +90,6 @@ function MovieDetails({ selectedId, onCloseMovie, onAddWatched, watched }) {
         [title]
     );
 
-    useEffect(() => {
-        function handleKeyDown(e) {
-            if (e.key === "Escape") onCloseMovie();
-        }
-        document.addEventListener("keydown", handleKeyDown);
-
-        return function () {
-            document.removeEventListener("keydown", handleKeyDown);
-        }
-    }, [onCloseMovie])
 
     return (
         <div className="details">

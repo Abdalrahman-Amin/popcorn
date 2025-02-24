@@ -1,5 +1,4 @@
 const Movie = ({ movie, onSelectMovie }) => {
-   console.log("DEBUG: ~ Movie ~ movie:", movie)
    return (
       <li onClick={() => onSelectMovie(movie.imdbID)} style={{ cursor: "pointer" }}>
          <img src={movie.Poster} alt={`${movie.Title} poster`} />

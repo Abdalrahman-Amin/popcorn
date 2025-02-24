@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Navbar from "./components/Navbar";
 import MainContent from "./components/MainContent";
 import NumResults from "./components/NumResults";
@@ -11,59 +11,15 @@ import WatchedMoviesList from "./components/WatchedMoviesList";
 import Loader from "./components/Loader";
 import ErrorMessage from "./components/ErrorMessage";
 import MovieDetails from "./components/MovieDetails";
-const API_KEY = import.meta.env.VITE_OMDB_API_KEY;
+import { useMovies } from "./hooks/useMovies";
+import { useLocalStorageState } from "./hooks/useLocalStorageState";
 
 export default function App() {
-   const [movies, setMovies] = useState([]);
-   const [watched, setWatched] = useState([]);
+   const [watched, setWatched] = useLocalStorageState("watched", []);
    const [selectedId, setSelectedId] = useState(null);
-   const [isLoading, setIsLoading] = useState(false);
-   const [error, setError] = useState("");
    const [query, setQuery] = useState("");
 
-
-   useEffect(function () {
-      const controller = new AbortController();
-      const fetchMovies = async (key) => {
-         try {
-            setError("");
-            setIsLoading(true);
-            const res = await fetch(
-               `https://www.omdbapi.com/?apikey=${key}&s=${query}`
-               , { signal: controller.signal });
-            if (!res.ok) {
-               throw new Error("Something went wrong with fetching movies");
-            }
-            const data = await res.json();
-
-            if (data.Response === "False") {
-               throw new Error("Movie Not Found!");
-            }
-            setMovies(data.Search);
-            setError("")
-         } catch (error) {
-            if (error.name !== "AbortError") {
-               setError(error.message);
-               console.log("error while fetching data", error);
-            }
-         } finally {
-            setIsLoading(false);
-         }
-      };
-      if (query.length < 3) {
-         setMovies([]);
-         setError("");
-         return;
-      }
-      handleCloseMovie();
-      fetchMovies(API_KEY);
-
-
-      return function () {
-         controller.abort();
-      }
-   }, [query]);
-
+   const { movies, isLoading, error } = useMovies(query);
    function handleSelectMovie(id) {
       setSelectedId(selectedId === id ? null : id);
    }
@@ -74,6 +30,7 @@ export default function App() {
 
    function handleAddWatched(movie) {
       setWatched((watched) => [...watched, movie]);
+      // localStorage.setItem("watched", JSON.stringify([...watched, movie]));
    }
 
    function handleDeleteWatched(id) {
